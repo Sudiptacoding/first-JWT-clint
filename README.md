@@ -1,8 +1,69 @@
-# React + Vite
+# Image uplode
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+import axios from 'axios';
+import React, { useState } from 'react';
 
-Currently, two official plugins are available:
+const ImageUplode = () => {
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [imageUrl, setImageUrl] = useState(null);
+
+    const handleFileChange = (event) => {
+        setSelectedFile(event.target.files[0]);
+    };
+
+    const uploadImageToImgBB = () => {
+        const imgbbApiKey = '48262f7096c971f7f2f1b695ae2a6be0'; // Replace with your ImgBB API key
+
+        if (!selectedFile) {
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('image', selectedFile);
+
+        setUploading(true);
+        setUploadProgress(0);
+
+        axios.post('https://api.imgbb.com/1/upload', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+            params: {
+                key: imgbbApiKey,
+            },
+            onUploadProgress: (progressEvent) => {
+                const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                setUploadProgress(progress);
+            },
+        })
+            .then(response => {
+                setUploading(false);
+                setImageUrl(response.data.data.url);
+                console.log(response.data.data.url);
+                // Use imageUrl to save it to MongoDB or perform other operations.
+            })
+            .catch(error => {
+                setUploading(false);
+                console.error(error);
+            });
+    };
+
+
+    return (
+        <div>
+            <div>
+                <input type="file" onChange={handleFileChange} />
+                <button onClick={uploadImageToImgBB}>Upload Image</button>
+
+                {uploading && <div>Uploading: {uploadProgress}%</div>}
+
+                {imageUrl && <img src={imageUrl} alt="Uploaded" />}
+            </div>
+        </div>
+    );
+};
+
+export default ImageUplode;
